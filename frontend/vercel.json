@@ -3,7 +3,5 @@
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "vite",
-  "regions": ["sfo1", "iad1"],
-  "envPrefix": "VITE_"
+  "framework": "vite"
 }

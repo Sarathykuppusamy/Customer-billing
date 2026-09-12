@@ -19,6 +19,15 @@ export default function Login() {
     pinConfirm: ''
   })
 
+  React.useEffect(() => {
+    if (!success && !error) return undefined
+    const timeout = setTimeout(() => {
+      setSuccess('')
+      setError('')
+    }, success ? 3500 : 5500)
+    return () => clearTimeout(timeout)
+  }, [success, error])
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -38,14 +47,14 @@ export default function Login() {
         throw new Error('Please enter phone and PIN')
       }
 
-      const { customer, error: loginError } = await loginCustomer(formData.phone, formData.pin)
+      const { customer, token, error: loginError } = await loginCustomer(formData.phone, formData.pin)
       
       if (loginError) {
         throw new Error(loginError)
       }
 
       if (customer) {
-        login(customer)
+        login(customer, token)
         navigate(customer.is_admin ? '/admin' : '/customer')
       }
     } catch (err) {
@@ -74,7 +83,7 @@ export default function Login() {
         throw new Error('PIN must be at least 4 digits')
       }
 
-      const { customer, error: registerError } = await registerCustomer(
+      const { error: registerError } = await registerCustomer(
         formData.name,
         formData.phone,
         formData.pin
@@ -95,25 +104,12 @@ export default function Login() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <div className="card" style={{
-        width: '100%',
-        maxWidth: '400px',
-        margin: '20px'
-      }}>
-        <h1 style={{
-          textAlign: 'center',
-          marginBottom: '30px',
-          color: '#2d6a4f'
-        }}>
-          Customer Billing
-        </h1>
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="brand-mark">CB</div>
+        <p className="eyebrow">DRUMSTICK LEDGER</p>
+        <h1>Customer Billing</h1>
+        <p className="auth-subtitle">{isRegister ? 'Create your account to track every sale.' : 'Sign in to view your account and payments.'}</p>
 
         {error && <div className="alert alert-danger">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
@@ -172,24 +168,15 @@ export default function Login() {
 
           <button
             type="submit"
-            className="btn-primary"
-            style={{
-              width: '100%',
-              marginBottom: '15px'
-            }}
+            className="btn-primary auth-submit"
             disabled={loading}
           >
             {loading ? 'Loading...' : isRegister ? 'Register' : 'Login'}
           </button>
         </form>
 
-        <div style={{
-          textAlign: 'center',
-          marginTop: '20px',
-          borderTop: '1px solid #ddd',
-          paddingTop: '20px'
-        }}>
-          <p style={{ marginBottom: '10px', color: '#666' }}>
+        <div className="auth-switch">
+          <p>
             {isRegister ? 'Already have an account?' : 'New user?'}
           </p>
           <button
@@ -199,36 +186,16 @@ export default function Login() {
               setSuccess('')
               setFormData({ name: '', phone: '', pin: '', pinConfirm: '' })
             }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#2d6a4f',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}
+            className="text-button"
           >
             {isRegister ? 'Login instead' : 'Register now'}
           </button>
         </div>
 
-        <div style={{
-          marginTop: '30px',
-          padding: '15px',
-          backgroundColor: '#f9f9f9',
-          borderRadius: '4px',
-          fontSize: '12px',
-          color: '#666'
-        }}>
-          <strong>Info:</strong>
-          <ul style={{ marginTop: '10px', marginLeft: '20px' }}>
-            <li>No app installation needed - use in your browser</li>
-            <li>Save to home screen for mobile access</li>
-            <li>Your data is securely stored online</li>
-          </ul>
+        <div className="auth-note">
+          <span>✓</span> Secure, paper-free records for every sale
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

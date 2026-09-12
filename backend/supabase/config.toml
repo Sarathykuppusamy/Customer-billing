@@ -1,0 +1,8 @@
+[functions.verify-pin]
+verify_jwt = false
+
+[functions.register-customer]
+verify_jwt = false
+
+[functions.app-api]
+verify_jwt = false

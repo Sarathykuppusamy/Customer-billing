@@ -6,7 +6,7 @@ import '../index.css'
 
 export default function CustomerView() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -20,6 +20,12 @@ export default function CustomerView() {
   })
 
   useEffect(() => {
+    if (!error) return undefined
+    const timeout = setTimeout(() => setError(''), 5500)
+    return () => clearTimeout(timeout)
+  }, [error])
+
+  useEffect(() => {
     if (!user || user.is_admin) {
       navigate('/login')
     } else {
@@ -30,7 +36,7 @@ export default function CustomerView() {
   const loadTransactions = async () => {
     setLoading(true)
     try {
-      const { transactions: txs, error: txError } = await getCustomerTransactions(user.id)
+      const { transactions: txs, error: txError } = await getCustomerTransactions(user.id, token)
       if (txError) throw new Error(txError)
 
       setTransactions(txs)
@@ -67,7 +73,7 @@ export default function CustomerView() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+    <div className="customer-page">
       {/* Header */}
       <div style={{
         backgroundColor: '#2d6a4f',

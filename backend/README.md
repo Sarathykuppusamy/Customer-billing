@@ -114,7 +114,7 @@ supabase functions deploy register-customer
 5. Add to frontend `.env.local`:
    - VITE_SUPABASE_URL
    - VITE_SUPABASE_ANON_KEY
-   - VITE_SUPABASE_SERVICE_ROLE_KEY (for backend only)
+   - `APP_SESSION_SECRET` (set with `supabase secrets set`; never expose it to the frontend)
 
 ## Security Notes
 

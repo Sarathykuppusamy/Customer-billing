@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts"
+import bcrypt from "npm:bcryptjs@2.4.3"
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "http://localhost:3000",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 }
@@ -14,7 +14,21 @@ serve(async (req) => {
   }
 
   try {
-    const { name, phone, pin } = await req.json()
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ success: false, error: "Method not allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    const rawBody = await req.text()
+    if (!rawBody) {
+      return new Response(JSON.stringify({ success: false, error: "Request body is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+    let body: { name?: string; phone?: string; pin?: string }
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return new Response(JSON.stringify({ success: false, error: "Request body must be valid JSON" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+    const { name, phone, pin } = body
 
     // Validate input
     if (!name || !phone || !pin) {
@@ -31,7 +45,7 @@ serve(async (req) => {
     }
 
     // Validate PIN length
-    if (pin.length < 4) {
+    if (typeof pin !== "string" || pin.length < 4) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -45,11 +59,14 @@ serve(async (req) => {
     }
 
     // Hash PIN using bcrypt
-    const pinHash = await bcrypt.hash(pin)
+    const pinHash = await bcrypt.hash(pin, 12)
 
     // Get Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error("Supabase service-role key is unavailable in this Edge Function")
+    }
 
     // Check if phone already exists
     const checkResponse = await fetch(
@@ -62,7 +79,10 @@ serve(async (req) => {
       }
     )
 
-    const existing = await checkResponse.json()
+    if (!checkResponse.ok) {
+      throw new Error(`Customer lookup failed (${checkResponse.status})`)
+    }
+    const existing = await checkResponse.json().catch(() => [])
 
     if (existing && existing.length > 0) {
       return new Response(
@@ -95,12 +115,13 @@ serve(async (req) => {
     })
 
     if (!insertResponse.ok) {
-      const error = await insertResponse.json()
-      throw new Error(error.message || "Failed to create customer")
+      const error = await insertResponse.json().catch(() => ({}))
+      throw new Error(error.message || `Failed to create customer (${insertResponse.status})`)
     }
 
-    const result = await insertResponse.json()
+    const result = await insertResponse.json().catch(() => [])
     const customer = result[0]
+    if (!customer) throw new Error("Customer was created but no record was returned")
 
     return new Response(
       JSON.stringify({

@@ -12,29 +12,38 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Check localStorage for saved user
-    const savedUser = localStorage.getItem('customer_billing_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    const savedSession = localStorage.getItem('customer_billing_session')
+    if (savedSession) {
+      try {
+        const session = JSON.parse(savedSession)
+        setUser(session.user)
+        setToken(session.token)
+      } catch {
+        localStorage.removeItem('customer_billing_session')
+      }
     }
     setLoading(false)
   }, [])
 
-  const login = (customer) => {
+  const login = (customer, sessionToken) => {
     setUser(customer)
-    localStorage.setItem('customer_billing_user', JSON.stringify(customer))
+    setToken(sessionToken)
+    localStorage.setItem('customer_billing_session', JSON.stringify({ user: customer, token: sessionToken }))
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('customer_billing_user')
+    setToken(null)
+    localStorage.removeItem('customer_billing_session')
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

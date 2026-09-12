@@ -10,13 +10,13 @@ import {
   getPendingPayments,
   searchCustomers,
   registerCustomer,
-  markAsPaid
+  markCustomerAsPaid
 } from '../lib/supabase'
 import '../index.css'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('entry')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -60,14 +60,29 @@ export default function AdminDashboard() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!success && !error) return undefined
+    const timeout = setTimeout(() => {
+      setSuccess('')
+      setError('')
+    }, success ? 3500 : 5500)
+    return () => clearTimeout(timeout)
+  }, [success, error])
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    setError('')
+    setSuccess('')
+  }
+
   const loadDashboardData = async () => {
     setLoading(true)
     try {
       const [metricsRes, transactionsRes, pendingRes, ratesRes] = await Promise.all([
-        getDashboardMetrics(),
-        getAllTransactions(),
-        getPendingPayments(),
-        getDailyRates(new Date().toISOString().split('T')[0])
+        getDashboardMetrics(token),
+        getAllTransactions(token),
+        getPendingPayments(token),
+        getDailyRates(new Date().toISOString().split('T')[0], token)
       ])
 
       if (metricsRes.error) throw new Error(metricsRes.error)
@@ -98,7 +113,7 @@ export default function AdminDashboard() {
   const handleCustomerSearch = async (query) => {
     setCustomerSearch(query)
     if (query.length > 1) {
-      const { customers } = await searchCustomers(query)
+      const { customers } = await searchCustomers(query, token)
       setSearchResults(customers)
     } else {
       setSearchResults([])
@@ -116,7 +131,8 @@ export default function AdminDashboard() {
       const { customer, error: regError } = await registerCustomer(
         newCustomerData.name,
         newCustomerData.phone,
-        newCustomerData.pin
+        newCustomerData.pin,
+        token
       )
       if (regError) throw new Error(regError)
       
@@ -141,7 +157,7 @@ export default function AdminDashboard() {
     setSuccess('')
 
     try {
-      const { transaction, error: txError } = await createTransaction(
+      const { error: txError } = await createTransaction(
         selectedCustomer.id,
         {
           date: transactionForm.date,
@@ -149,7 +165,8 @@ export default function AdminDashboard() {
           weight: parseFloat(transactionForm.weight),
           rate: parseFloat(transactionForm.rate),
           status: transactionForm.status
-        }
+        },
+        token
       )
 
       if (txError) throw new Error(txError)
@@ -182,7 +199,7 @@ export default function AdminDashboard() {
         { type: 'Cheti', rate_per_kg: parseFloat(dailyRates.Cheti) },
         { type: 'Maram', rate_per_kg: parseFloat(dailyRates.Maram) }
       ]
-      const { error } = await setDailyRates(dailyRates.date, rates)
+      const { error } = await setDailyRates(dailyRates.date, rates, token)
       if (error) throw new Error(error)
       setSuccess('Daily rates updated!')
     } catch (err) {
@@ -192,9 +209,9 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleMarkAsPaid = async (transactionId) => {
+  const handleMarkAsPaid = async (customerId) => {
     try {
-      const { error } = await markAsPaid(transactionId)
+      const { error } = await markCustomerAsPaid(customerId, token)
       if (error) throw new Error(error)
       setSuccess('Payment marked!')
       await loadDashboardData()
@@ -208,23 +225,17 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="admin-shell">
       {/* Sidebar */}
-      <div style={{
-        width: '250px',
-        backgroundColor: '#2d6a4f',
-        color: 'white',
-        padding: '20px',
-        overflow: 'auto'
-      }}>
-        <h2>Admin Panel</h2>
+      <aside className="admin-sidebar">
+        <div className="sidebar-brand"><span>CB</span><div><strong>Customer Billing</strong><small>ADMIN CONSOLE</small></div></div>
         <p style={{ fontSize: '14px', marginBottom: '30px', opacity: 0.9 }}>
           Welcome, {user.name}
         </p>
 
-        <nav style={{ marginBottom: '30px' }}>
+        <nav className="sidebar-nav">
           <button
-            onClick={() => setActiveTab('entry')}
+            onClick={() => handleTabChange('entry')}
             style={{
               display: 'block',
               width: '100%',
@@ -240,7 +251,7 @@ export default function AdminDashboard() {
             📝 New Entry
           </button>
           <button
-            onClick={() => setActiveTab('metrics')}
+            onClick={() => handleTabChange('metrics')}
             style={{
               display: 'block',
               width: '100%',
@@ -256,7 +267,7 @@ export default function AdminDashboard() {
             📊 Metrics
           </button>
           <button
-            onClick={() => setActiveTab('pending')}
+            onClick={() => handleTabChange('pending')}
             style={{
               display: 'block',
               width: '100%',
@@ -272,7 +283,7 @@ export default function AdminDashboard() {
             ⏳ Pending Payments
           </button>
           <button
-            onClick={() => setActiveTab('rates')}
+            onClick={() => handleTabChange('rates')}
             style={{
               display: 'block',
               width: '100%',
@@ -288,7 +299,7 @@ export default function AdminDashboard() {
             💰 Set Rates
           </button>
           <button
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => handleTabChange('transactions')}
             style={{
               display: 'block',
               width: '100%',
@@ -312,10 +323,10 @@ export default function AdminDashboard() {
         >
           Logout
         </button>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: '30px', overflow: 'auto' }}>
+      <main className="admin-content">
         {error && <div className="alert alert-danger">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
@@ -776,7 +787,7 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

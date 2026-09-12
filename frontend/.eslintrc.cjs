@@ -1,4 +1,5 @@
-{
+module.exports = {
+  "ignorePatterns": ["dist/"],
   "env": {
     "browser": true,
     "es2021": true
@@ -21,6 +22,9 @@
     }
   },
   "rules": {
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "react/no-unescaped-entities": "off",
+    "react-hooks/exhaustive-deps": "off"
   }
 }

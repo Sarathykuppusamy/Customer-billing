@@ -31,13 +31,8 @@ npm install
 4. Copy your:
    - `Project URL` → `VITE_SUPABASE_URL`
    - `Anon Key` → `VITE_SUPABASE_ANON_KEY`
-   - `Service Role Key` → `VITE_SUPABASE_SERVICE_ROLE_KEY`
 
-5. Go to **SQL Editor** in Supabase and run the SQL migration:
-   - Open [supabase/migrations/001_init.sql](./supabase/migrations/001_init.sql)
-   - Copy all the SQL
-   - Paste into Supabase SQL Editor
-   - Click "Run"
+5. From the repository root, run `cd backend && supabase db push` to apply all migrations.
 
 6. Create the first admin account:
    - In Supabase SQL Editor, run:
@@ -58,7 +53,6 @@ Create `.env.local` file in the project root:
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-VITE_SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ### 4. **Run Locally**
@@ -82,10 +76,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 2. Go to [vercel.com](https://vercel.com) and sign up
 3. Click "New Project" → Import your GitHub repository
-4. In Environment Variables, add:
+4. Set the Vercel Root Directory to `frontend`, then add:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_SUPABASE_SERVICE_ROLE_KEY`
 5. Click "Deploy"
 
 Your app is now live! Share the URL with farmers and admins.
@@ -155,7 +148,7 @@ All calculations use **generated columns** — database computes them, so totals
 ## Support
 For issues or questions:
 1. Check the **Help** section in the Customer view
-2. Review database schema in [supabase/migrations/001_init.sql](./supabase/migrations/001_init.sql)
+2. Review the database schema in [backend/supabase/migrations](../backend/supabase/migrations)
 3. Consult [Supabase docs](https://supabase.com/docs)
 
 ## License
